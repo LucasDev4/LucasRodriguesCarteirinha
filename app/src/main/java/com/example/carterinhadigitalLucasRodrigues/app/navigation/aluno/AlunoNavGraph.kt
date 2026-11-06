@@ -1,0 +1,146 @@
+package com.example.carterinhadigitalLucasRodrigues.app.navigation.aluno
+
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavGraphBuilder
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.composable
+import androidx.navigation.navigation
+import com.example.carterinhadigitalLucasRodrigues.app.navigation.GraphRoutes.ALUNO
+import com.example.carterinhadigitalLucasRodrigues.app.navigation.ProfileGuard
+import com.example.carterinhadigitalLucasRodrigues.app.ui.AppShell
+import com.example.carterinhadigitalLucasRodrigues.feature.aluno.carteirinha.presentation.screen.CarteirinhaScreen
+import com.example.carterinhadigitalLucasRodrigues.feature.aluno.home.presentation.screen.HomeAlunoScreen
+import com.example.carterinhadigitalLucasRodrigues.feature.login.domain.model.PerfilAcesso
+import com.example.carterinhadigitalLucasRodrigues.feature.login.domain.model.UsuarioLogado
+import com.example.carterinhadigitalLucasRodrigues.feature.aluno.unidadescurriculares.domain.repository.UnidadeCurricularRepository
+import com.example.carterinhadigitalLucasRodrigues.feature.aluno.unidadescurriculares.presentation.UnidadeCurricularViewModel
+import com.example.carterinhadigitalLucasRodrigues.feature.aluno.unidadescurriculares.presentation.factory.UnidadeCurricularViewModelFactory
+import com.example.carterinhadigitalLucasRodrigues.feature.aluno.unidadescurriculares.presentation.screen.UnidadeCurricularScreen
+import kotlinx.coroutines.flow.StateFlow
+import com.example.carterinhadigitalLucasRodrigues.app.navigation.aluno.AlunoRoutes.CARTEIRINHA
+import com.example.carterinhadigitalLucasRodrigues.app.navigation.aluno.AlunoRoutes.HOME
+import com.example.carterinhadigitalLucasRodrigues.app.navigation.aluno.AlunoRoutes.UNIDADES_CURRICULARES
+
+fun NavGraphBuilder.alunoNavGraph(
+    navController: NavHostController,
+    usuarioLogadoFlow: StateFlow<UsuarioLogado?>,
+    unidadeCurricularRepository: UnidadeCurricularRepository,
+    darkTheme: Boolean,
+    onDarkThemeChange: (Boolean) -> Unit,
+    onLogout: () -> Unit,
+    onSessaoAusente: () -> Unit,
+    onPerfilInvalido: (PerfilAcesso) -> Unit
+) {
+    navigation(
+        startDestination = HOME,
+        route = ALUNO
+    ) {
+        composable(
+            route = HOME
+        ) {
+            ProfileGuard(
+                usuarioFlow = usuarioLogadoFlow,
+                perfilEsperado = PerfilAcesso.ALUNO,
+                onSessaoAusente = onSessaoAusente,
+                onPerfilInvalido = onPerfilInvalido
+            ) { usuario ->
+
+                AppShell(
+                    title = "Início",
+                    usuarioLogado = usuario,
+                    canNavigateBack = false,
+                    darkTheme = darkTheme,
+                    onDarkThemeChange = onDarkThemeChange,
+                    onNavigateBack = {},
+                    onLogout = onLogout
+                ) { innerPadding ->
+                    HomeAlunoScreen(
+                        usuarioLogado = usuario,
+                        onCarteirinhaClick = {
+                            navController.navigate(CARTEIRINHA)
+                        },
+                        onUnidadesCurricularesClick = {
+                            navController.navigate(UNIDADES_CURRICULARES)
+                        },
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding)
+                    )
+                }
+            }
+        }
+
+        composable(route = CARTEIRINHA) {
+
+            ProfileGuard(
+                usuarioFlow = usuarioLogadoFlow,
+                perfilEsperado = PerfilAcesso.ALUNO,
+                onSessaoAusente = onSessaoAusente,
+                onPerfilInvalido = onPerfilInvalido
+            ) { usuario ->
+
+                AppShell(
+                    title = "Carteirinha",
+                    usuarioLogado = usuario,
+                    canNavigateBack = true,
+                    darkTheme = darkTheme,
+                    onDarkThemeChange = onDarkThemeChange,
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    onLogout = onLogout
+                ) { innerPadding ->
+                    CarteirinhaScreen(
+                        usuarioLogado = usuario,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding)
+                    )
+                }
+            }
+        }
+
+        composable(route = UNIDADES_CURRICULARES) {
+
+            ProfileGuard(
+                usuarioFlow = usuarioLogadoFlow,
+                perfilEsperado = PerfilAcesso.ALUNO,
+                onSessaoAusente = onSessaoAusente,
+                onPerfilInvalido = onPerfilInvalido
+            ) { usuario ->
+
+                val factory = remember(unidadeCurricularRepository) {
+                    UnidadeCurricularViewModelFactory(
+                        repository = unidadeCurricularRepository
+                    )
+                }
+
+                val unidadeCurricularViewModel: UnidadeCurricularViewModel = viewModel(
+                    factory = factory
+                )
+                AppShell(
+                    title = "Unidades Curriculares",
+                    usuarioLogado = usuario,
+                    canNavigateBack = true,
+                    darkTheme = darkTheme,
+                    onDarkThemeChange = onDarkThemeChange,
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    onLogout = onLogout
+                ) { innerPadding ->
+                    UnidadeCurricularScreen(
+                        viewModel = unidadeCurricularViewModel,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding)
+                    )
+                }
+            }
+        }
+    }
+}
